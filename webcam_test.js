@@ -61,10 +61,18 @@ function populateCameraList() {
 	});
 }
 
+function updateResolutionInfo(video) {
+    const resolutionInfo = document.querySelector('#resolution-info');
+    resolutionInfo.textContent = `Current Resolution: ${video.videoWidth}×${video.videoHeight} @ ${video.videoWidth * video.videoHeight} pixels`;
+}
+
 function setCamera() {
 	let constraints = {
 		video: {
-			deviceId: selectedCamera
+			deviceId: selectedCamera,
+			width: { ideal: 4096 },
+			height: { ideal: 2160 },
+			frameRate: { ideal: 60 }
 		}
 	};
 
@@ -72,5 +80,38 @@ function setCamera() {
 		let video = document.querySelector('#webcam-output');
 		video.srcObject = stream;
 		video.play();
+		
+		// Update resolution info when video metadata is loaded
+		video.onloadedmetadata = () => {
+			updateResolutionInfo(video);
+		};
+		
+		// Update resolution info if it changes (e.g., when switching cameras)
+		video.onresize = () => {
+			updateResolutionInfo(video);
+		};
+	}).catch((error) => {
+		console.error('Error accessing camera:', error);
+		// Fallback to basic constraints if max resolution fails
+		constraints = {
+			video: {
+				deviceId: selectedCamera
+			}
+		};
+		navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+			let video = document.querySelector('#webcam-output');
+			video.srcObject = stream;
+			video.play();
+			
+			// Update resolution info when video metadata is loaded
+			video.onloadedmetadata = () => {
+				updateResolutionInfo(video);
+			};
+			
+			// Update resolution info if it changes
+			video.onresize = () => {
+				updateResolutionInfo(video);
+			};
+		});
 	});
 }
